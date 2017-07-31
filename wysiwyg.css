@@ -34,22 +34,23 @@ a:hover
 }
 a.Title_Link
 {
-   color: #FF0000;
+   color: #0F65EF;
    text-decoration: none;
 }
 a.Title_Link:visited
 {
-   color: #FF0000;
+   color: #0F65EF;
    text-decoration: none;
 }
 a.Title_Link:active
 {
-   color: #FF0000;
+   color: #0F65EF;
    text-decoration: none;
 }
 a.Title_Link:hover
 {
    color: #0000FF;
+   font-weight: bold;
    text-decoration: none;
 }
 h1
