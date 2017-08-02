@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Untitled Page</title>
+<meta name="generator" content="WYSIWYG Web Builder 12 - http://www.wysiwygwebbuilder.com">
+<script src="jscookmenu.min.js"></script>
+<link href="wysiwyg.css" rel="stylesheet">
+<link href="Master_Content.css" rel="stylesheet">
+<script src="jquery-1.12.4.min.js"></script>
+<script src="./searchindex.js"></script>
+<script>
+var features = 'toolbar=no,menubar=no,location=no,scrollbars=yes,resizable=yes,status=no,left=,top=,width=,height=';
+var searchDatabase = new SearchDatabase();
+var searchResults_length = 0;
+var searchResults = new Object();
+function searchPage(features)
+{
+   var element = document.getElementById('Search_Bar');
+   if (element.value.length != 0 || element.value != " ")
+   {
+      var value = unescape(element.value);
+      var keywords = value.split(" ");
+      searchResults_length = 0;
+      for (var i=0; i<database_length; i++)
+      {
+         var matches = 0;
+         var words = searchDatabase[i].title + " " + searchDatabase[i].description + " " + searchDatabase[i].keywords;
+         for (var j = 0; j < keywords.length; j++)
+         {
+            var pattern = new RegExp(keywords[j], "i");
+            var result = words.search(pattern);
+            if (result >= 0)
+            {
+               matches++;
+            }
+            else
+            {
+               matches = 0;
+            }
+         }
+         if (matches == keywords.length)
+         {
+            searchResults[searchResults_length++] = searchDatabase[i];
+         }
+      }
+      var wndResults = window.open('about:blank', '', features);
+      setTimeout(function()
+      {
+         var results = '';
+         var html = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Search results<\/title><\/head>';
+         html = html + '<body style="background-color:#FFFFFF;margin:0;padding:2px 2px 2px 2px;">';
+         html = html + '<span style="font-family:Proxima Nova Rg;font-size:13px;color:#000000">';
+         for (var n=0; n<searchResults_length; n++)
+         {
+            var page_keywords = searchResults[n].keywords;
+            results = results + '<strong><a style="color:#0000FF" target="_parent" href="'+searchResults[n].url+'">'+searchResults[n].title +'<\/a><\/strong><br>Keywords: ' + page_keywords +'<br><br>\n';
+         }
+         if (searchResults_length == 0)
+         {
+            results = 'No results';
+         }
+         else
+         {
+            html = html + searchResults_length;
+            html = html + ' result(s) found for search term: ';
+            html = html + value;
+            html = html + '<br><br>';
+         }
+         html = html + results;
+         html = html + '<\/span>';
+         html = html + '<\/body><\/html>';
+         wndResults.document.write(html);
+     },100);
+   }
+   return false;
+}
+function searchParseURL()
+{
+   var url = decodeURIComponent(window.location.href);
+   if (url.indexOf('?') > 0)
+   {
+      var terms = '';
+      var params = url.split('?');
+      var values = params[1].split('&');
+      for (var i=0;i<values.length;i++)
+      {
+         var param = values[i].split('=');
+         if (param[0] == 'q')
+         {
+            terms = unescape(param[1]);
+            break;
+         }
+      }
+      if (terms != '')
+      {
+         var element = document.getElementById('Search_Bar');
+         element.value = terms;
+         searchPage('');
+      }
+   }
+}
+</script>
+<script>
+$(document).ready(function()
+{
+   searchParseURL();
+   var $autocomplete = $('<ul class="autocomplete"></ul>').hide().insertAfter('#Search_Bar');
+   var selectedItem = null;
+   var setSelectedItem = function(item)
+   {
+      selectedItem = item;
+      if (selectedItem === null)
+      {
+         $autocomplete.hide();
+         return;
+      }
+      if (selectedItem < 0)
+      {
+         selectedItem = 0;
+      }
+      if (selectedItem >= $autocomplete.find('li').length)
+      {
+         selectedItem = $autocomplete.find('li').length - 1;
+      }
+      $autocomplete.find('li').removeClass('selected').eq(selectedItem).addClass('selected');
+      $autocomplete.css('left', $('#Search_Bar').position().left);
+      $autocomplete.css('top', $('#Search_Bar').position().top + $('#Search_Bar').outerHeight());
+      $autocomplete.show();
+   };
+   var populateSearchField = function()
+   {
+      $('#Search_Bar').val($autocomplete.find('li').eq(selectedItem).text());
+      setSelectedItem(null);
+   };
+   $('#Search_Bar').attr('autocomplete', 'off').keyup(function(event)
+   {
+      if (event.keyCode > 40 || event.keyCode == 8)
+      {
+         var data = new Array();
+         var keywordVal = $('#Search_Bar').val();
+         keywordVal = keywordVal.toLowerCase();
+         for (i=0; i<database_length; i++)
+         {
+            var words = (searchDatabase[i].title + " " + searchDatabase[i].description + " " + searchDatabase[i].keywords).toLowerCase();
+            var array = words.split(" ");
+            data = $.merge(data, array);
+         }
+
+         var unique = new Array();
+         o:for(var i = 0; i < data.length; i++)
+         {
+            for(var j = 0; j < unique.length; j++)
+            {
+               if(unique[j]==data[i]) continue o;
+            }
+            unique[unique.length] = data[i];
+         }
+
+         unique.sort();
+         if (keywordVal.length && unique.length)
+         {
+            $autocomplete.empty();
+            var item = 0;
+            $.each(unique, function(index, term)
+            {
+               term = term.toLowerCase();
+               if (term.indexOf(keywordVal) == 0)
+               {
+                  $('<li></li>').text(term).data('item', item).appendTo($autocomplete).mouseover(function()
+                  {
+                     var item = $(this).data('item');
+                     setSelectedItem(item);
+                  }).click(populateSearchField);
+                  item++;
+               }
+            });
+            setSelectedItem(0);
+         }
+         else
+         {
+            setSelectedItem(null);
+         }
+      }
+      else
+      if (event.keyCode == 38 && selectedItem !== null)
+      {
+         setSelectedItem(selectedItem - 1);
+         event.preventDefault();
+      }
+      else
+      if (event.keyCode == 40 && selectedItem !== null)
+      {
+         setSelectedItem(selectedItem + 1);
+         event.preventDefault();
+      }
+      else
+      if (event.keyCode == 27 && selectedItem !== null)
+      {
+         setSelectedItem(null);
+      }
+   }).keypress(function(event)
+   {
+      if (event.keyCode == 13 && selectedItem !== null)
+      {
+         populateSearchField();
+         event.preventDefault();
+      }
+   }).blur(function(event)
+   {
+      setTimeout(function()
+      {
+         setSelectedItem(null);
+      }, 250);
+   });
+});
+</script>
+</head>
+<body>
+<div id="Header" style="position:fixed;text-align:left;left:0;top:0;right:0;height:59px;z-index:22;">
+<div id="wb_Home_Button" style="position:absolute;left:149px;top:15px;width:124px;height:21px;z-index:0;">
+<a href="./index.html"><img src="images/2000px-BuzzFeed.svg.png" id="Home_Button" alt=""></a></div>
+<div id="wb_News_Button" style="position:absolute;left:295px;top:20px;width:50px;height:16px;z-index:1;">
+<span style="color:#0F65EF;font-family:'Proxima Nova Rg';font-size:16px;"><a href="./Master_Content.html" class="Title_Link">News</a></span></div>
+<div id="wb_Videos_Button" style="position:absolute;left:358px;top:20px;width:50px;height:32px;z-index:2;">
+<span style="color:#0F65EF;font-family:'Proxima Nova Rg';font-size:16px;"><a href="./New_Hillel_Building.html" class="Title_Link">Videos</a></span></div>
+<div id="wb_More_Button" style="position:absolute;left:504px;top:18px;width:65px;height:22px;z-index:1003;">
+<div id="More_Button">
+<ul style="display:none;">
+<li><span></span><span>More</span>
+<ul>
+<li><span></span><a href="./Banner.html" target="_self">Shtus</a>
+</li>
+<li><span></span><a href="./Trending.html" target="_self">Shtick</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<script>
+var cmMore_Button =
+{
+   mainFolderLeft: '',
+   mainFolderRight: '',
+   mainItemLeft: '',
+   mainItemRight: '',
+   folderLeft: '',
+   folderRight: '',
+   itemLeft: '',
+   itemRight: '',
+   mainSpacing: 0,
+   subSpacing: 0,
+   delay: 100,
+   offsetHMainAdjust: [0, 0],
+   offsetSubAdjust: [0, 0]
+};
+var cmMore_ButtonHSplit = [_cmNoClick, '<td class="More_ButtonMenuSplitLeft"><div></div></td>' +
+                                       '<td class="More_ButtonMenuSplitText"><div></div></td>' +
+                                       '<td class="More_ButtonMenuSplitRight"><div></div></td>'];
+var cmMore_ButtonMainVSplit = [_cmNoClick, '<div><table width="15" cellspacing="0"><tr><td class="More_ButtonHorizontalSplit">|</td></tr></table></div>'];
+var cmMore_ButtonMainHSplit = [_cmNoClick, '<td colspan="3" class="More_ButtonMainSplitText"><div></div></td>'];
+cmDrawFromText('More_Button', 'hbr', cmMore_Button, 'More_Button');
+</script>
+</div>
+<form name="Search_Bar_form" id="Search_Bar_form" accept-charset="UTF-8" onsubmit="return searchPage(features)">
+<input type="text" id="Search_Bar" style="position:absolute;left:647px;top:12px;width:160px;height:23px;line-height:23px;z-index:4;" name="SiteSearch1" value="" spellcheck="false" placeholder="  Search"></form>
+<div id="wb_Lists_Button" style="position:absolute;left:432px;top:20px;width:60px;height:32px;z-index:5;">
+<span style="color:#0F65EF;font-family:'Proxima Nova Rg';font-size:16px;"><a href="#" class="Title_Link">Quizzes</a></span></div>
+<div id="wb_Emoticons" style="position:absolute;left:928px;top:4px;width:232px;height:47px;z-index:6;">
+<img src="images/BuzzFeed_Badges.png" id="Emoticons" alt=""></div>
+</div>
+
+<div id="wb_MasterObjects1" style="position:absolute;left:859px;top:179px;width:322px;height:289px;z-index:19;">
+<div id="wb_Shape2" style="position:absolute;left:0px;top:9px;width:322px;height:280px;z-index:7;">
+<img src="images/img0001.png" id="Shape2" alt="" style="width:322px;height:280px;"></div>
+<div id="wb_Shape1" style="position:absolute;left:0px;top:0px;width:322px;height:9px;z-index:8;">
+<img src="images/img0004.gif" id="Shape1" alt="" style="width:322px;height:9px;"></div>
+<div id="wb_Text1" style="position:absolute;left:13px;top:24px;width:125px;height:26px;z-index:9;">
+<span style="color:#000000;font-family:'Proxima Nova Th';font-size:21px;">B</span><span style="color:#000000;font-family:'Proxima Nova Th';font-size:16px;">OO'S</span><span style="color:#FF0000;font-family:'Bookman Old Style';font-size:16px;"><strong>NEWS</strong></span></div>
+<div id="wb_Text2" style="position:absolute;left:13px;top:54px;width:280px;height:34px;z-index:10;">
+<span style="color:#000000;font-family:'Proxima Nova Rg';font-size:17px;">Totally Real Announcements, 100%Fact-Checked</span></div>
+<div id="wb_Text3" style="position:absolute;left:13px;top:109px;width:280px;height:105px;z-index:11;">
+<span style="color:#000000;font-family:'Proxima Nova Rg';font-size:15px;">Shabbat This Week To End On Tuesday<br>​<br>Plot Twist! Recount Reveals Hillel President Is Actually Write-In Candidate Avi Singer<br>​<br>&quot;Soon By You&quot; Picked Up By HBO</span></div>
+<input type="submit" id="Button1" name="Submit_An_Announcement" value="Submit An Announcement!" style="position:absolute;left:43px;top:232px;width:221px;height:37px;">
+</div>
+<div id="wb_MasterObjects2" style="position:absolute;left:0px;top:59px;width:1330px;height:90px;z-index:20;">
+<img src="images/img0003.jpg" id="Banner1" alt="" style="border-width:0;position:absolute;left:0px;top:0px;width:1330px;height:90px;z-index:13;">
+</div>
+<div id="wb_MasterObjects3" style="position:absolute;left:859px;top:515px;width:322px;height:505px;z-index:21;">
+<div id="wb_Shape2" style="position:absolute;left:0px;top:9px;width:322px;height:496px;z-index:14;">
+<img src="images/img0005.png" id="Shape2" alt="" style="width:322px;height:496px;"></div>
+<div id="wb_Shape1" style="position:absolute;left:0px;top:0px;width:322px;height:9px;z-index:15;">
+<img src="images/img0006.gif" id="Shape1" alt="" style="width:322px;height:9px;"></div>
+<div id="wb_Text1" style="position:absolute;left:13px;top:24px;width:224px;height:20px;z-index:16;">
+<span style="color:#FF69B4;font-family:'Proxima Nova Rg';font-size:20px;"><strong>Trending Now</strong></span></div>
+</div>
+</body>
+</html>
